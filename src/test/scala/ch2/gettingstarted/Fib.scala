@@ -1,4 +1,5 @@
-package chapter2
+package ch2.gettingstarted
+
 import org.scalatest.{FunSuite, ShouldMatchers}
 
 import scala.annotation.tailrec
