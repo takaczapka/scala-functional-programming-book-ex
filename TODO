@@ -1,3 +1,4 @@
 * bump up scqla version
 * review dependencies versions
 * any FUN project as a part of the journey??
+ * @deprecated(message: <stringlit>, since: <stringlit>)
