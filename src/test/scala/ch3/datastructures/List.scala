@@ -21,21 +21,21 @@ trait List[+A] {
 
   def foldLeft[B](z: B)(f: (B, A) => B): B
 
-  def length: Int
+  def lengthWithFoldRight: Int
 
-  def length2: Int
+  def lengthWithFoldLeft: Int
 
   def reverse: List[A]
 
-  def append[B >: A](l: List[B]): List[B]
+  def appendWithFoldLeft[B >: A](l: List[B]): List[B]
 
-  def append2[B >: A](l: List[B]): List[B]
+  def appendWithFoldRight[B >: A](l: List[B]): List[B]
 
   def map[B](f: A => B): List[B]
 
   def filter(f: A => Boolean): List[A]
 
-  def filter2(f: A => Boolean): List[A]
+  def filterWithFlatMap(f: A => Boolean): List[A]
 
   def flatMap[B >: A](f: B => List[B]): List[B]
 
@@ -59,21 +59,21 @@ case object Nil extends List[Nothing] {
 
   override def foldLeft[B](z: B)(f: (B, Nothing) => B): B = z
 
-  override def length: Int = 0
+  override def lengthWithFoldRight: Int = 0
 
-  override def length2: Int = 0
+  override def lengthWithFoldLeft: Int = 0
 
   override def reverse: List[Nothing] = this
 
-  override def append[B](l: List[B]): List[B] = l
+  override def appendWithFoldLeft[B](l: List[B]): List[B] = l
 
-  override def append2[B](l: List[B]): List[B] = l
+  override def appendWithFoldRight[B](l: List[B]): List[B] = l
 
   override def map[B](f: (Nothing) => B): List[B] = Nil
 
   override def filter(f: (Nothing) => Boolean): List[Nothing] = Nil
 
-  override def filter2(f: (Nothing) => Boolean): List[Nothing] = Nil
+  override def filterWithFlatMap(f: (Nothing) => Boolean): List[Nothing] = Nil
 
   override def flatMap[B >: Nothing](f: (B) => List[B]): List[B] = Nil
 
@@ -98,23 +98,23 @@ case class Cons[+A](head: A, tail: List[A]) extends List[A] {
 
   final override def foldLeft[B](z: B)(f: (B, A) => B): B = tail.foldLeft(f(z, head))(f)
 
-  override def length: Int = foldRight(0)((_, b) => b + 1)
+  override def lengthWithFoldRight: Int = foldRight(0)((_, b) => b + 1)
 
-  override def length2: Int = foldLeft(0)((b, _) => b + 1)
+  override def lengthWithFoldLeft: Int = foldLeft(0)((b, _) => b + 1)
 
   override def reverse: List[A] = foldLeft(Nil: List[A])((b, a) => Cons(a, b))
 
-  override def append[B >: A](l: List[B]): List[B] = reverse.foldLeft(l) { case (acc, c) =>
+  override def appendWithFoldLeft[B >: A](l: List[B]): List[B] = reverse.foldLeft(l) { case (acc, c) =>
     Cons(c, acc)
   }
 
-  override def append2[B >: A](l: List[B]): List[B] = foldRight(l) { case (c, acc) => Cons(c, acc) }
+  override def appendWithFoldRight[B >: A](l: List[B]): List[B] = foldRight(l) { case (c, acc) => Cons(c, acc) }
 
   override def map[B](f: A => B): List[B] = Cons(f(head), tail.map(f))
 
   override def filter(f: (A) => Boolean): List[A] = if (f(head)) Cons(head, tail.filter(f)) else tail.filter(f)
 
-  override def filter2(f: (A) => Boolean): List[A] = flatMap(a => if (f(a)) Cons(a, Nil) else Nil)
+  override def filterWithFlatMap(f: (A) => Boolean): List[A] = flatMap(a => if (f(a)) Cons(a, Nil) else Nil)
 
   override def flatMap[B >: A](f: (B) => List[B]): List[B] = List.concat(map(f))
 
@@ -148,11 +148,11 @@ object List {
     case Cons(h, t) => h * product(t)
   }
 
-  def product2(ds: List[Double]): Double = ds.foldRight(1.0)(_ * _)
+  def productWithFoldRight(ds: List[Double]): Double = ds.foldRight(1.0)(_ * _)
 
-  def product3(ds: List[Double]): Double = ds.foldLeft(1.0)(_ * _)
+  def productWithFoldLeft(ds: List[Double]): Double = ds.foldLeft(1.0)(_ * _)
 
-  def sum2(ds: List[Double]): Double = ds.foldLeft(0.0)(_ + _)
+  def sumWithFoldLeft(ds: List[Double]): Double = ds.foldLeft(0.0)(_ + _)
 
   def foldRight[A, B](ds: List[A], z: B)(f: (A, B) => B): B = ds match {
     case Nil => z
@@ -176,7 +176,7 @@ object List {
   def /:[A, B](ds: List[A], z: B)(f: (B, A) => B): B = foldLeft(ds, z)(f)
 
   def concat[A](lists: List[List[A]]): List[A] = foldLeft(lists, Nil: List[A]) { case (a, acc) =>
-    a.append(acc)
+    a.appendWithFoldLeft(acc)
   }
 }
 
@@ -189,12 +189,12 @@ class ListTest extends FunSuite with Matchers {
     testProduct(product)
   }
 
-  test("product2") {
-    testProduct(product2)
+  test("productWithFoldRight") {
+    testProduct(productWithFoldRight)
   }
 
-  test("product3") {
-    testProduct(product3)
+  test("productWithFoldLeft") {
+    testProduct(productWithFoldLeft)
   }
 
   def testProduct(p: List[Double] => Double): Unit = {
@@ -265,10 +265,10 @@ class ListTest extends FunSuite with Matchers {
   }
 
   test("length") {
-    Nil.length should be(0)
-    List().length should be(0)
-    List(1).length should be(1)
-    List(1, 3, 5).length should be(3)
+    Nil.lengthWithFoldRight should be(0)
+    List().lengthWithFoldRight should be(0)
+    List(1).lengthWithFoldRight should be(1)
+    List(1, 3, 5).lengthWithFoldRight should be(3)
   }
 
   test("reverse") {
@@ -278,8 +278,8 @@ class ListTest extends FunSuite with Matchers {
   }
 
   test("append") {
-    def append1[A](l1: List[A], l2: List[A]) = l1.append(l2)
-    def append2[A](l1: List[A], l2: List[A]) = l1.append2(l2)
+    def appendWithFoldLeft[A](l1: List[A], l2: List[A]) = l1.appendWithFoldLeft(l2)
+    def appendWithFoldRight[A](l1: List[A], l2: List[A]) = l1.appendWithFoldRight(l2)
 
     def testAppend(append: (List[Int], List[Int]) => List[Int]) {
       append(List(), List()) should be(List())
@@ -288,8 +288,8 @@ class ListTest extends FunSuite with Matchers {
       append(List(1, 2), List(3, 4)) should be(List(1, 2, 3, 4))
     }
 
-    testAppend(append1)
-    testAppend(append2)
+    testAppend(appendWithFoldLeft)
+    testAppend(appendWithFoldRight)
   }
 
   test("concat") {
@@ -310,9 +310,9 @@ class ListTest extends FunSuite with Matchers {
     List(1, 2, 3).filter(_ <= 2) should be(List(1, 2))
   }
 
-  test("filter2") {
-    List(1, 2, 3).filter2(_ > 2) should be(List(3))
-    List(1, 2, 3).filter2(_ <= 2) should be(List(1, 2))
+  test("filterWithFlatMap") {
+    List(1, 2, 3).filterWithFlatMap(_ > 2) should be(List(3))
+    List(1, 2, 3).filterWithFlatMap(_ <= 2) should be(List(1, 2))
   }
 
   test("flatmap") {
