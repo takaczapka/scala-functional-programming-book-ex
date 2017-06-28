@@ -104,11 +104,9 @@ case class Cons[+A](head: A, tail: List[A]) extends List[A] {
 
   override def reverse: List[A] = foldLeft(Nil: List[A])((b, a) => Cons(a, b))
 
-  override def appendWithFoldLeft[B >: A](l: List[B]): List[B] = reverse.foldLeft(l) { case (acc, c) =>
-    Cons(c, acc)
-  }
+  override def appendWithFoldLeft[B >: A](l: List[B]): List[B] = reverse.foldLeft(l)((acc, c) => Cons(c, acc))
 
-  override def appendWithFoldRight[B >: A](l: List[B]): List[B] = foldRight(l) { case (c, acc) => Cons(c, acc) }
+  override def appendWithFoldRight[B >: A](l: List[B]): List[B] = foldRight(l)((c, acc) => Cons(c, acc))
 
   override def map[B](f: A => B): List[B] = Cons(f(head), tail.map(f))
 
@@ -175,9 +173,8 @@ object List {
 
   def /:[A, B](ds: List[A], z: B)(f: (B, A) => B): B = foldLeft(ds, z)(f)
 
-  def concat[A](lists: List[List[A]]): List[A] = foldLeft(lists, Nil: List[A]) { case (a, acc) =>
-    a.appendWithFoldLeft(acc)
-  }
+  def concat[A](lists: List[List[A]]): List[A] = foldLeft(lists, Nil: List[A])(
+    (a, acc) => a.appendWithFoldLeft(acc))
 }
 
 
