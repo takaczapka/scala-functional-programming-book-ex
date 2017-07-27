@@ -25,12 +25,8 @@ object State {
 
   def unit[S, A](a: A): State[S, A] = State(s => (a, s))
 
-  def sequence[S, A](fs: List[State[S, A]]): State[S, List[A]] = State(s => {
-    fs.foldRight((Nil: List[A], s)) { case (state, (res, current)) =>
-      val (a, nxtSt): (A, S) = state.run(current)
-      (a :: res, nxtSt)
-    }
-  })
+  def sequence[S, A](fs: List[State[S, A]]): State[S, List[A]] =
+    fs.foldRight(unit[S, List[A]](Nil))((s, acc) => s.map2(acc)(_ :: _))
 
   def get[S]: State[S, S] = State(s => (s, s))
 
@@ -57,7 +53,7 @@ trait MachineState extends State[Machine, (Int, Int)] {
 
 object CandyMachine {
 
-  def process(m: Machine)(i: Input): Machine =
+  def process(i: Input)(m: Machine): Machine =
     i match {
       case Coin =>
         m.copy(locked = false, coins = m.coins + 1)
@@ -68,13 +64,18 @@ object CandyMachine {
 
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = State(m => {
 
-    val r = inputs.foldLeft(m) { case (currentMachine, input) => process(currentMachine)(input) }
+    val r = inputs.foldLeft(m) { case (currentMachine, input) => process(input)(currentMachine) }
 
     ((r.candies, r.coins), r)
   })
+
+  def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = for {
+    _ <- State.sequence(inputs.map(input => State.modify(process(input))))
+    m <- State.get
+  } yield (m.candies, m.coins)
 }
 
-import CandyMachine._
+import ch6.functionalstate.CandyMachine._
 class SimTest extends FunSuite with Matchers {
   test("sim") {
     val m = Machine(locked = true, 5, 10)
@@ -82,6 +83,16 @@ class SimTest extends FunSuite with Matchers {
 
     val ((candies, coins), _) : ((Int, Int), Machine) = simulateMachine(seq).run(m)
 
+    (candies, coins) should be ((1, 14))
+  }
+
+  test("sim2") {
+    val m = Machine(locked = true, 5, 10)
+    val seq = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
+
+    val ((candies, coins), nm) : ((Int, Int), Machine) = simulateMachine2(seq).run(m)
+
+    println(nm)
     (candies, coins) should be ((1, 14))
   }
 }
