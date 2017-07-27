@@ -24,6 +24,11 @@ sealed trait Stream[+A] {
     case _ => Empty
   }
 
+  def find(p: A => Boolean): Option[A] = this match {
+    case Cons(h, t) => if (p(h())) Some(h()) else t().find(p)
+    case _ => None
+  }
+
   def exists(p: A => Boolean): Boolean = this match {
     case Cons(h, t) => p(h()) || t().exists(p)
     case _ => false
@@ -68,6 +73,13 @@ sealed trait Stream[+A] {
   def takeWhileWithUnfold(p: A => Boolean): Stream[A] = unfold(this) {
     case Cons(h, t) if p(h()) => Some(h(), t())
     case _ => None
+  }
+
+  def zip[B](l: Stream[B]): Stream[(A, B)] = unfold((this, l)) {
+    case (Empty, Empty) => None
+    case (_, Empty) => None
+    case (Empty, _) => None
+    case (Cons(h1, t1), Cons(h2, t2)) => Some((h1(), h2()), (t1(), t2()))
   }
 
   def zipWith[B >: A](l: Stream[B])(f: (A, B) => B): Stream[B] = unfold((this, l)) {
@@ -140,6 +152,7 @@ object Stream {
     cons(0, fib(0, 1))
   }
 
+  // this is great method to pass the state forward (see ch6.functionalstate and ch8.propertytesting)
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = f(z) match {
     case Some((a, s)) => cons(a, unfold(s)(f))
     case None => empty[A]
