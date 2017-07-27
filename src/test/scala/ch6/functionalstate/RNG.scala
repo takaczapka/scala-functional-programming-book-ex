@@ -21,6 +21,7 @@ case class SimpleRNG(seed: Long) extends RNG {
 object RNG {
 
   def rng: RNG = SimpleRNG(Random.nextLong())
+  def simpleRng = rng
 
   def nonNegativeInt(rng: RNG): (Int, RNG) = {
     val (i, r) = rng.nextInt
