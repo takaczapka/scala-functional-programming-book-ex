@@ -37,6 +37,8 @@ object Gen {
 
   def double: Gen[Double] = Gen(State(RNG.double))
 
+  def list[A](g: Gen[A]): Gen[List[A]] = int.map(i => i % 10).flatMap(i => listOfN(i, g))
+
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] = Gen(State.sequence((1 to n).map(_ => g.sample).toList))
 
   // notice use of List.fill(n)(f) to call a function f n times
@@ -118,14 +120,14 @@ object Prop {
     (max, n, rng) =>
       randomStream(g)(rng).zip(Stream.from(0)).take(n).map {
         case (a, i) => try {
-          if (p(a)) Passed() else Falsified(name + ":" + a.toString, i)
+          if (p(a)) Passed else Falsified(name + ":" + a.toString, i)
         } catch {
           case e: Exception => Falsified(buildMsg(a, e), i)
         }
       }.find {
         case _: Falsified => true
         case _ => false
-      }.getOrElse(Passed())
+      }.getOrElse(Passed)
 
   })
 
@@ -163,17 +165,21 @@ object Prop {
     p.run(maxSize, testCases, rng) match {
       case Falsified(msg, n) =>
         println(s"! Falsified after $n passed tests:\n $msg.")
-      case Passed() =>
+      case Passed =>
         println(s"+ OK, passed $testCases tests.")
     }
   }
+
+  def runResult(p: Prop, maxSize: Int = 100, testCases: Int = 10, rng: RNG = RNG.rng): Result =
+    p.run(maxSize, testCases, rng)
+
 }
 
 import ch8.propertytesting.Prop._
 
 sealed trait Result
 
-case class Passed() extends Result
+case object Passed extends Result
 
 case class Falsified(failure: FailedCase, successes: SuccessCount) extends Result
 
@@ -186,7 +192,7 @@ case class Prop(run: (Max, TestCases, RNG) => Result) {
   def &&(p: Prop): Prop = {
     Prop((max, tc, rng) =>
       run(max, tc, rng) match {
-        case Passed() => p.run(max, tc, rng)
+        case Passed => p.run(max, tc, rng)
         case x => x
       })
   }
@@ -227,6 +233,10 @@ class PropTest extends FunSuite with Matchers {
   }
   test("sequence") {
     Gen.sequence(List(Gen.unit(0), Gen.unit(1))).sample.run(RNG.rng)._1 should be(List(0, 1))
+  }
+
+  test("Gen.list") {
+    println(Gen.list(Gen.int).sample.run(RNG.rng))
   }
   test("forAll show") {
     Prop.run(forAll("greater than", Gen.int)(i => i > Integer.MIN_VALUE))
