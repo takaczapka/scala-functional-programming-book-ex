@@ -18,6 +18,8 @@ sealed trait Tree[+A] {
   def mapWithFold[B](f: A => B): Tree[B]
 
   def fold[B](f: A => B)(g: (B, B) => B): B
+
+  def toList: List[A]
 }
 
 case class Leaf[A](v: A) extends Tree[A] {
@@ -36,6 +38,8 @@ case class Leaf[A](v: A) extends Tree[A] {
   override def mapWithFold[B](f: (A) => B): Tree[B] = Leaf(f(v))
 
   override def fold[B](f: A => B)(g: (B, B) => B): B = f(v)
+
+  override def toList: List[A] = List(v)
 }
 
 case class Node[A](left: Tree[A], right: Tree[A]) extends Tree[A] {
@@ -54,6 +58,8 @@ case class Node[A](left: Tree[A], right: Tree[A]) extends Tree[A] {
   override def mapWithFold[B](f: (A) => B): Tree[B] = fold(a => Leaf(f(a)): Tree[B]) { case (l, r) => Node(l, r) }
 
   override def fold[B](f: A => B)(g: (B, B) => B): B = g(left.fold(f)(g), right.fold(f)(g))
+
+  override def toList: List[A] = left.toList ++ right.toList
 }
 
 
@@ -106,6 +112,11 @@ class TreeTest extends FunSuite with Matchers {
   test("mapWithFold") {
     Leaf(1).mapWithFold(_ + 1) should be(Leaf(2))
     Node(Leaf(1), Node(Leaf(2), Leaf(3))).mapWithFold(_ + 2) should be(Node(Leaf(3), Node(Leaf(4), Leaf(5))))
+  }
+
+  test("toList") {
+    Leaf(1).toList should be(List(1))
+    Node(Leaf(1), Node(Leaf(2), Leaf(3))).toList should be(List(1, 2, 3))
   }
 }
 
