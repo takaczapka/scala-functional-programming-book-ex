@@ -19,6 +19,10 @@ sealed trait Option[+A] {
 
   def filter(f: A => Boolean): Option[A] = flatMap(a => if (f(a)) Some(a) else None)
 
+  def toList: List[A] = this match {
+    case None => Nil
+    case Some(a) => List(a)
+  }
 }
 
 case object None extends Option[Nothing]
