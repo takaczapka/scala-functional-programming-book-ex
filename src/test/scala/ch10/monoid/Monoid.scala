@@ -50,13 +50,48 @@ object Monoid {
   def optionMonoid[A] = new Monoid[Option[A]] {
     override def zero: Option[A] = None
 
-    override def op(a1: Option[A], a2: Option[A]): Option[A] = if (a1.isDefined) a1 else a2
+    override def op(a1: Option[A], a2: Option[A]): Option[A] = a1 orElse a2
   }
 
   def endoMonoid[A] = new Monoid[A => A] {
     override def zero: A => A = identity
 
-    override def op(a1: A => A, a2: A => A): A => A = a1 andThen a2
+    override def op(a1: A => A, a2: A => A): A => A = a1 compose a2
+  }
+
+  // dual monoid is any monoid just by flipping the `op`.
+  // very monoid has a _dual_ where the
+  // `op` combines things in the opposite order. Monoids like `booleanOr` and
+  // `intAddition` are equivalent to their duals because their `op` is commutative
+  // as well as associative, but option is not commutative so there are two correct implementations
+  def dual[A](a: Monoid[A]) = new Monoid[A] {
+    override def zero: A = a.zero
+
+    override def op(a1: A, a2: A): A = a.op(a2, a1)
+  }
+
+  def product[A, B](A: Monoid[A], B: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    override def op(a1: (A, B), a2: (A, B)): (A, B) = (A.op(a1._1, a2._1), B.op(a1._2, a2._2))
+
+    override def zero: (A, B) = (A.zero, B.zero)
+  }
+
+  def mergeMapMonoid[K, V](V: Monoid[V]): Monoid[Map[K, V]] = new Monoid[Map[K, V]] {
+    override def zero: Map[K, V] = Map()
+
+    // classic
+    //    override def op(a1: Map[K, V], a2: Map[K, V]): Map[K, V] = (a1.keys ++ a2.keys).map(
+    //      k => k -> V.op(a1.getOrElse(k, V.zero), a2.getOrElse(k, V.zero))).toMap
+
+    // with fold left
+    override def op(a1: Map[K, V], a2: Map[K, V]): Map[K, V] = (a1.keys ++ a2.keys).foldLeft(zero)(
+      (acc, k) => acc.updated(k, V.op(a1.getOrElse(k, V.zero), a2.getOrElse(k, V.zero))))
+  }
+
+  def functionMonoid[A, B](B: Monoid[B]): Monoid[A => B] = new Monoid[A => B] {
+    override def zero: A => B = _ => B.zero
+
+    override def op(a1: A => B, a2: A => B): A => B = a => B.op(a1(a), a1(a))
   }
 
   def monoidLaws[A](m: Monoid[A], gen: Gen[A]): Prop =
@@ -72,6 +107,38 @@ object Monoid {
     foldMap(as, m)(a => f(z, a))
 
 
+  // folding by splitting the seq in two
+  def foldMapV[A, B](as: IndexedSeq[A], m: Monoid[B])(f: A => B): B = as match {
+    case IndexedSeq() => m.zero
+    case IndexedSeq(elem) => f(elem)
+    case other => {
+      val (left, right) = other.splitAt(other.size / 2)
+      m.op(foldMapV(left, m)(f), foldMapV(right, m)(f))
+    }
+  }
+
+  // TODO implement parallel version of foldMapV using par
+
+
+  val strange = new Monoid[Option[(Int, Int, Boolean)]] { // TODO
+      override def zero: Option[(Int, Int, Boolean)] = None
+
+    override def op(l: Option[(Int, Int, Boolean)], r: Option[(Int, Int, Boolean)]): Option[(Int, Int, Boolean)] =
+      (l, r) match {
+        case (x, None) => None
+        case (None, x) => None
+        case (Some((a1, a2, isOr1)), Some((b1, b2, isOr2))) =>
+          if (!isOr1 || !isOr2) None else
+          Some {
+            (a1 min b1, a2 max b2, a1 <= b1 && a2 <= b2 )
+          }
+
+      }
+  }
+
+  // Use foldMap to detect whether a given IndexedSeq[Int] is ordered
+  // TODO
+  def isOrdered(as: IndexedSeq[Int]): Boolean = foldMapV(as, strange)(a => Some((a, a, true))).map(_._3).getOrElse(false)
 }
 
 import ch10.monoid.Monoid._
@@ -116,5 +183,25 @@ class MonoidTest extends FunSuite with Matchers {
     val withFoldMap = foldLeftWithFoldMap(as, intAddition)(0)(_ + _)
 
     classic shouldBe withFoldMap
+  }
+
+  test("foldMapV") {
+    val as = IndexedSeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+    foldMapV(as, intAddition)(identity) shouldBe 81
+  }
+
+  test("strange") {
+    Prop.runResult(monoidLaws(strange, Gen.int.map(_ % 10).map(i => Option((i, i, true))))) shouldBe Passed
+  }
+
+  test("isOrdered") {
+    isOrdered(IndexedSeq(1, 2, 3)) shouldBe true
+    isOrdered(IndexedSeq(1, 2, 2)) shouldBe true
+    isOrdered(IndexedSeq(2, 2, 2)) shouldBe true
+    isOrdered(IndexedSeq(2, 1, 2)) shouldBe false
+    isOrdered(IndexedSeq(2, 1, 1)) shouldBe false
+    isOrdered(IndexedSeq(2, 1, 0)) shouldBe false
+
+    isOrdered(IndexedSeq(-542078577, -834216340, 473868580)) shouldBe false
   }
 }
