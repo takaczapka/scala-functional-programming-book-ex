@@ -27,6 +27,8 @@ trait List[+A] {
 
   def reverse: List[A]
 
+  def ++[B >: A](as: List[B]): List[B]
+
   def appendWithFoldLeft[B >: A](l: List[B]): List[B]
 
   def appendWithFoldRight[B >: A](l: List[B]): List[B]
@@ -42,6 +44,8 @@ trait List[+A] {
   def zipWith[B >: A](l : List[B])(f: (A, B) => B): List[B]
 
   def hasSubsequence[B >: A](l: List[B]): Boolean
+
+  def ::[B >: A](a: B): List[B] = Cons(a, this)
 }
 
 case object Nil extends List[Nothing] {
@@ -80,6 +84,8 @@ case object Nil extends List[Nothing] {
   override def zipWith[B >: Nothing](l: List[B])(f: (Nothing, B) => B): List[B] = Nil
 
   override def hasSubsequence[B >: Nothing](l: List[B]): Boolean = if (l == Nil) true else false
+
+  override def ++[B >: Nothing](as: List[B]): List[B] = as
 }
 
 case class Cons[+A](head: A, tail: List[A]) extends List[A] {
@@ -130,6 +136,8 @@ case class Cons[+A](head: A, tail: List[A]) extends List[A] {
 
     if (startsWith(this, l)) true else tail.hasSubsequence(l)
   }
+
+  override def ++[B >: A](as: List[B]): List[B] = appendWithFoldLeft(as)
 }
 
 object List {
