@@ -82,8 +82,17 @@ object Gen {
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
     boolean.flatMap(v => if (v) g1 else g2)
 
+  // TODO implement weighted with some probabilities
+
   def sequence[A](fs: List[Gen[A]]): Gen[List[A]] =
     fs.foldRight(unit(Nil: List[A]))((g, acc) => g.map2(acc)(_ :: _))
+
+  def tuple[A, B](a: Gen[A], b: Gen[B]): Gen[(A, B)] =
+    a.map2(b)((a, b) => (a, b))
+
+  def triple[A, B, C](a: Gen[A], b: Gen[B], c: Gen[C]): Gen[(A, B, C)] =
+    a.map2(b)((a, b) => (a, b)).map2(c)((m, c) => (m._1, m._2, c))
+
 }
 
 case class SGen[A](forSize: Int => Gen[A]) {
