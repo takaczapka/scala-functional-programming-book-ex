@@ -3,6 +3,7 @@ package ch11.monad
 import ch3.datastructures._
 import ch4.errorhandling._
 import ch5.strictnessandlaziness._
+import ch6.functionalstate.State
 import ch7.parallelism.Par.Par
 import ch7.parallelism._
 import ch8.propertytesting.Gen
@@ -62,6 +63,21 @@ object Monad {
     override def flatMap[A, B](ma: Par[A])(f: A => Par[B]): Par[B] =
       Par.flatMap(ma)(f)
   }
+
+  // TODO how to create Either monad with two type parameters
+//  val eitherMonad: Monad[Either] = new Monad[Either] {
+//    override def unit[A](a: => A): Either[A, _] = Right(a)
+//
+//    override def flatMap[A, B](ma: Either[A, B])(f: A => Either[B]) = ???
+//  }
+
+  // as above
+//  val stateMonad: Monad[State] = new Monad[State] {
+//    override def unit[A](a: => A): State[_, A] = State.unit(a)
+//
+//    override def flatMap[A, B](ma: State[_ <: Nothing, A])(f: A => State[_ <: Nothing, B]): State[_ <: Nothing, B] =
+//      ma.flatMap(f)
+//  }
 }
 
 class MonoidTest extends FunSuite with Matchers {
