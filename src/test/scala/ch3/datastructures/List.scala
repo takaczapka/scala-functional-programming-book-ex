@@ -39,7 +39,7 @@ trait List[+A] {
 
   def filterWithFlatMap(f: A => Boolean): List[A]
 
-  def flatMap[B >: A](f: B => List[B]): List[B]
+  def flatMap[B](f: A => List[B]): List[B]
 
   def zipWith[B >: A](l : List[B])(f: (A, B) => B): List[B]
 
@@ -79,7 +79,7 @@ case object Nil extends List[Nothing] {
 
   override def filterWithFlatMap(f: (Nothing) => Boolean): List[Nothing] = Nil
 
-  override def flatMap[B >: Nothing](f: (B) => List[B]): List[B] = Nil
+  override def flatMap[B](f: Nothing => List[B]): List[B] = Nil
 
   override def zipWith[B >: Nothing](l: List[B])(f: (Nothing, B) => B): List[B] = Nil
 
@@ -120,7 +120,7 @@ case class Cons[+A](head: A, tail: List[A]) extends List[A] {
 
   override def filterWithFlatMap(f: (A) => Boolean): List[A] = flatMap(a => if (f(a)) Cons(a, Nil) else Nil)
 
-  override def flatMap[B >: A](f: (B) => List[B]): List[B] = List.concat(map(f))
+  override def flatMap[B](f: A => List[B]): List[B] = List.concat(map(f))
 
   override def zipWith[B >: A](l: List[B])(f: (A, B) => B): List[B] = l match {
     case Cons(_head, _t) => Cons(f(head, _head), tail.zipWith(_t)(f))
