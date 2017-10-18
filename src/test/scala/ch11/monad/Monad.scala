@@ -96,5 +96,9 @@ class MonoidTest extends FunSuite with Matchers {
     optionMonad.replicateM(3, Some(1)) shouldBe Some(List(1,1,1))
 
     optionMonad.replicateM(3, None) shouldBe None
+
+    listMonad.replicateM(2, List(1)) shouldBe List(List(1, 1))
+    listMonad.replicateM(2, List(1,2)) shouldBe List(List(1,1), List(1,2), List(2,1), List(2,2))
+    listMonad.replicateM(2, Nil) shouldBe Nil
   }
 }
