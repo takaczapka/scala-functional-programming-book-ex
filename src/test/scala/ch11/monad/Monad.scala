@@ -6,6 +6,7 @@ import ch5.strictnessandlaziness._
 import ch7.parallelism.Par.Par
 import ch7.parallelism._
 import ch8.propertytesting.Gen
+import org.scalatest.{FunSuite, Matchers}
 
 trait Monad[F[_]] extends Functor[F] {
 
@@ -18,6 +19,12 @@ trait Monad[F[_]] extends Functor[F] {
 
   def map2[A, B, C](ma: F[A], mb: F[B])(f: (A, B) => C): F[C] =
     flatMap(ma)(a => map(mb)(b => f(a, b)))
+
+  def traverse[A, B](lma: List[F[A]])(f: A => B): F[List[B]] =
+    lma.foldRight(unit(Nil: List[B]))((fa, b) => map2(fa, b)((a, r) => f(a) :: r))
+
+  def sequence[A](lma: List[F[A]]): F[List[A]] =
+    traverse(lma)(identity)
 }
 
 object Monad {
@@ -28,7 +35,7 @@ object Monad {
       ma.flatMap(f)
   }
 
-  val listMonad: Monad[List]= new Monad[List] {
+  val listMonad: Monad[List] = new Monad[List] {
     override def unit[A](a: => A): List[A] = List(a)
 
     override def flatMap[A, B](ma: List[A])(f: A => List[B]): List[B] =
@@ -54,5 +61,16 @@ object Monad {
 
     override def flatMap[A, B](ma: Par[A])(f: A => Par[B]): Par[B] =
       Par.flatMap(ma)(f)
+  }
+}
+
+class MonoidTest extends FunSuite with Matchers {
+
+  import Monad._
+
+  test("sequence list test") {
+    val l = List(Some(1), Some(2), Some(3))
+
+    optionMonad.sequence(l) shouldBe Some(List(1, 2, 3))
   }
 }
