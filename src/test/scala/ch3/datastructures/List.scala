@@ -46,6 +46,11 @@ trait List[+A] {
   def hasSubsequence[B >: A](l: List[B]): Boolean
 
   def ::[B >: A](a: B): List[B] = Cons(a, this)
+
+  override def toString: String = {
+    val res: String= foldRight("")((a, b) => if (b == "") a.toString else a.toString + "," + b)
+    "List(" + res + ")"
+  }
 }
 
 case object Nil extends List[Nothing] {
