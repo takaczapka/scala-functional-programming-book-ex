@@ -32,10 +32,13 @@ object State {
 
   def set[S](s: S): State[S, Unit] = State(_ => ((), s))
 
-  def modify[S](f: S => S): State[S, Unit] = for {
-    s <- get
-    _ <- set(f(s))
-  } yield ()
+  def modify[S](f: S => S): State[S, Unit] = {
+    get.flatMap(s => set(f(s)))
+//  for {
+//    s <- get
+//    ns <- set(f(s))
+//  } yield ()
+  }
 }
 
 
@@ -76,23 +79,24 @@ object CandyMachine {
 }
 
 import ch6.functionalstate.CandyMachine._
+
 class SimTest extends FunSuite with Matchers {
   test("sim") {
     val m = Machine(locked = true, 5, 10)
     val seq = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
 
-    val ((candies, coins), _) : ((Int, Int), Machine) = simulateMachine(seq).run(m)
+    val ((candies, coins), _): ((Int, Int), Machine) = simulateMachine(seq).run(m)
 
-    (candies, coins) should be ((1, 14))
+    (candies, coins) should be((1, 14))
   }
 
   test("sim2") {
     val m = Machine(locked = true, 5, 10)
     val seq = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
 
-    val ((candies, coins), nm) : ((Int, Int), Machine) = simulateMachine2(seq).run(m)
+    val ((candies, coins), nm): ((Int, Int), Machine) = simulateMachine2(seq).run(m)
 
     println(nm)
-    (candies, coins) should be ((1, 14))
+    (candies, coins) should be((1, 14))
   }
 }
