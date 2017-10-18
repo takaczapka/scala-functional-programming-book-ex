@@ -90,6 +90,12 @@ object Par {
 
   def map[A, B](a: Par[A])(f: A => B): Par[B] = map2(a, unit(()))((a, _) => f(a))
 
+  def flatMap[A, B](a: Par[A])(f: A => Par[B]): Par[B] =
+    es => {
+      val k: A = run(es)(a).get
+      run(es)(f(k))
+    }
+
   def sortParWithMap(parList: Par[List[Int]]): Par[List[Int]] = map(parList)(_.sorted)
 
   def sequence[A](p: List[Par[A]]): Par[List[A]] =
