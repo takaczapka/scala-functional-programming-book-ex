@@ -26,6 +26,9 @@ trait Monad[F[_]] extends Functor[F] {
 
   def sequence[A](lma: List[F[A]]): F[List[A]] =
     traverse(lma)(identity)
+
+  def replicateM[A](n: Int, ma: F[A]): F[List[A]] =
+    sequence(List.fill(n)(ma))
 }
 
 object Monad {
@@ -85,8 +88,13 @@ class MonoidTest extends FunSuite with Matchers {
   import Monad._
 
   test("sequence list test") {
-    val l = List(Some(1), Some(2), Some(3))
+    optionMonad.sequence(List(Some(1), Some(2), Some(3))) shouldBe Some(List(1, 2, 3))
+    optionMonad.sequence(List(Some(1), None)) shouldBe None
+  }
 
-    optionMonad.sequence(l) shouldBe Some(List(1, 2, 3))
+  test("replicateM") {
+    optionMonad.replicateM(3, Some(1)) shouldBe Some(List(1,1,1))
+
+    optionMonad.replicateM(3, None) shouldBe None
   }
 }
