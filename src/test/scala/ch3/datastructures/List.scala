@@ -41,7 +41,7 @@ trait List[+A] {
 
   def flatMap[B](f: A => List[B]): List[B]
 
-  def zipWith[B >: A](l : List[B])(f: (A, B) => B): List[B]
+  def zipWith[B >: A](l: List[B])(f: (A, B) => B): List[B]
 
   def hasSubsequence[B >: A](l: List[B]): Boolean
 
@@ -183,6 +183,14 @@ object List {
 
   def concat[A](lists: List[List[A]]): List[A] = foldLeft(lists, Nil: List[A])(
     (a, acc) => a.appendWithFoldLeft(acc))
+
+  def fill[A](n: Int)(elem: A): List[A] = {
+    def fillIn(_n: Int, acc: List[A]): List[A] = {
+      if (_n <= 0) acc else fillIn(_n - 1, elem :: acc)
+    }
+
+    fillIn(n, Nil)
+  }
 }
 
 
@@ -284,6 +292,7 @@ class ListTest extends FunSuite with Matchers {
 
   test("append") {
     def appendWithFoldLeft[A](l1: List[A], l2: List[A]) = l1.appendWithFoldLeft(l2)
+
     def appendWithFoldRight[A](l1: List[A], l2: List[A]) = l1.appendWithFoldRight(l2)
 
     def testAppend(append: (List[Int], List[Int]) => List[Int]) {
