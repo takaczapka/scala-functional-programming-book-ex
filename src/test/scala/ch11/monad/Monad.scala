@@ -1,6 +1,7 @@
 package ch11.monad
 
 import ch3.datastructures._
+import ch3.datastructures.Cons
 import ch4.errorhandling._
 import ch5.strictnessandlaziness._
 import ch6.functionalstate.State
@@ -29,6 +30,18 @@ trait Monad[F[_]] extends Functor[F] {
 
   def replicateM[A](n: Int, ma: F[A]): F[List[A]] =
     sequence(List.fill(n)(ma))
+
+  def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] =
+    map2(ma, mb)((_,_))
+
+  def filterM[A](ms: List[A])(f : A => F[Boolean]): F[List[A]] =
+    ms match {
+      case Nil => unit(Nil)
+      case Cons(h, t) => flatMap(f(h)){
+        a => if (!a) filterM(t)(f)
+        else map(filterM(t)(f))(h :: _)
+      }
+    }
 }
 
 object Monad {
@@ -83,7 +96,7 @@ object Monad {
 //  }
 }
 
-class MonoidTest extends FunSuite with Matchers {
+class MonadTest extends FunSuite with Matchers {
 
   import Monad._
 
@@ -100,5 +113,18 @@ class MonoidTest extends FunSuite with Matchers {
     listMonad.replicateM(2, List(1)) shouldBe List(List(1, 1))
     listMonad.replicateM(2, List(1,2)) shouldBe List(List(1,1), List(1,2), List(2,1), List(2,2))
     listMonad.replicateM(2, Nil) shouldBe Nil
+  }
+
+  test("product") {
+    listMonad.product(List(1,2,3), List(4,5)) shouldBe List((1, 4), (1, 5), (2, 4), (2, 5), (3, 4), (3, 5))
+  }
+
+  test("filterM") {
+    optionMonad.filterM(List(1,2,3))(a => if (a > 2) Some(true) else Some(false)) shouldBe Some(List(3))
+    optionMonad.filterM(List(1,2,3))(a => if (a > 2) Some(true) else None) shouldBe None
+
+    listMonad.filterM(List(1,2,3))(a => if (a > 2) List(true) else List(false) ) shouldBe List(List(3))
+    listMonad.filterM(List(1,2,3))(a => if (a > 2) List(true) else Nil ) shouldBe List()
+
   }
 }

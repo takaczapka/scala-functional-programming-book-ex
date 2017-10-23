@@ -196,6 +196,8 @@ object List {
 
     fillIn(n, Nil)
   }
+
+  def ::[A, B >: A](a: B)(l: List[A]): List[B] = Cons(a, l)
 }
 
 
