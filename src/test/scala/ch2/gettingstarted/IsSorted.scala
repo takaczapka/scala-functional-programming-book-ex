@@ -1,6 +1,6 @@
 package ch2.gettingstarted
 
-import org.scalatest.{FunSuite, ShouldMatchers}
+import org.scalatest.{FunSuite, Matchers}
 
 object IsSorted {
   def isSorted[A](as: Array[A], ordered: (A, A) => Boolean): Boolean = {
@@ -19,7 +19,7 @@ object IsSorted {
   }
 }
 
-class IsSortedTest extends FunSuite with ShouldMatchers {
+class IsSortedTest extends FunSuite with Matchers {
 
   import IsSorted.isSorted
 

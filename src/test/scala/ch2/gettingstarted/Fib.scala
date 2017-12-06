@@ -1,6 +1,6 @@
 package ch2.gettingstarted
 
-import org.scalatest.{FunSuite, ShouldMatchers}
+import org.scalatest.{FunSuite, Matchers}
 
 import scala.annotation.tailrec
 
@@ -22,7 +22,7 @@ object Fib {
   }
 }
 
-class FibTest extends FunSuite with ShouldMatchers {
+class FibTest extends FunSuite with Matchers {
 
   import Fib._
 
